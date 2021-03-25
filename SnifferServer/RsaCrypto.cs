@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Security.Cryptography;
 using System.Text;
+using System.Windows.Forms;
 
 namespace SnifferServer
 {
     class RsaCrypto
     {
-        public static string _privateKey;
-        public static string _publicKey;
-        public static string _serverPublicKey;
+        //public static string _privateKey;
+        //public static string _publicKey;
+        //public static string _serverPublicKey;
         private static UnicodeEncoding _encoder = new UnicodeEncoding();
 
         private RSACryptoServiceProvider ServerPrivateKey; //server's private key
@@ -18,17 +19,98 @@ namespace SnifferServer
         /// <summary>
         /// constructor that creates an rsa object and keys
         /// </summary>
-        /// <param name="publicKey"></param>
+        /// <param name="client's public key"></param>
         public RsaCrypto(string publicKey)
         {
             ServerPrivateKey = new RSACryptoServiceProvider(2048);
             ServerPublicKey = ServerPrivateKey.ToXmlString(false);
-            //var rsa = new RSACryptoServiceProvider();
-            ClientPublicKey = new RSACryptoServiceProvider();
+
+            ClientPublicKey = new RSACryptoServiceProvider(2048);
             ClientPublicKey.FromXmlString(publicKey);
+            //var rsa = new RSACryptoServiceProvider();
             //_publicKey = publicKey;
             //_privateKey = rsa.ToXmlString(true);
             //_serverPublicKey = rsa.ToXmlString(false);
+        }
+
+        /// <summary>
+        /// returns the original public key that the server created
+        /// </summary>
+        /// <returns></returns>
+        public string GetServerPublicKey()
+        {
+            return ServerPublicKey;
+        }
+
+        /// <summary>
+        /// encryptes bytes using RSA protocol
+        /// </summary>
+        /// <param name="DataToEncrypt">original bytes</param>
+        /// <returns>encrypted bytes</returns>
+        public byte[] RSAEncrypt(byte[] DataToEncrypt)
+        {
+            try
+            {
+                byte[] encryptedData;
+                //RSAParameters RSAKeyInfo = ClientPublicKey.ExportParameters(false);
+                //Create a new instance of RSACryptoServiceProvider. 
+                //using (RSACryptoServiceProvider RSA = new RSACryptoServiceProvider())
+                //{
+
+                //    //Import the RSA Key information. This only needs 
+                //    //toinclude the public key information.
+                //    RSA.ImportParameters(RSAKeyInfo);
+
+                //    //Encrypt the passed byte array and specify OAEP padding.   
+                //    //OAEP padding is only available on Microsoft Windows XP or 
+                //    //later.  
+                encryptedData = ClientPublicKey.Encrypt(DataToEncrypt, false);
+                //}
+                return encryptedData;
+            }
+            //Catch and display a CryptographicException   
+            //to the console. 
+            catch (CryptographicException e)
+            {
+                Console.WriteLine(e.Message);
+
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// decryptes encrypted bytes using RSA protocol
+        /// </summary>
+        /// <param name="DataToDecrypt">encrypted bytes</param>
+        /// <returns>decrypted bytes</returns>
+        public byte[] RSADecrypt(byte[] DataToDecrypt)
+        {
+            try
+            {
+                byte[] decryptedData;
+                //RSAParameters RSAKeyInfo = ServerPrivateKey.ExportParameters(false);
+                //Create a new instance of RSACryptoServiceProvider. 
+                //using (RSACryptoServiceProvider RSA = new RSACryptoServiceProvider())
+                //{
+                //Import the RSA Key information. This needs 
+                //to include the private key information.
+                //RSA.ImportParameters(RSAKeyInfo);
+
+                //Decrypt the passed byte array and specify OAEP padding.   
+                //OAEP padding is only available on Microsoft Windows XP or 
+                //later.  
+                decryptedData = ServerPrivateKey.Decrypt(DataToDecrypt, false);
+                //}
+                return decryptedData;
+            }
+            //Catch and display a CryptographicException   
+            //to the console. 
+            catch (CryptographicException e)
+            {
+                MessageBox.Show(e.ToString());
+
+                return null;
+            }
         }
 
         /// <summary>
@@ -40,8 +122,8 @@ namespace SnifferServer
         {
             var dataArray = data.ToCharArray();
             byte[] dataByte = _encoder.GetBytes(dataArray, 0, dataArray.Length);
-
-            var decryptedByte = ServerPrivateKey.Decrypt(dataByte, false);
+            byte[] dataBytes = ASCIIEncoding.ASCII.GetBytes(data);
+            var decryptedByte = ServerPrivateKey.Decrypt(dataBytes, false);
             return _encoder.GetString(decryptedByte);
 
             //var rsa = new RSACryptoServiceProvider();
@@ -87,14 +169,5 @@ namespace SnifferServer
             //return sb.ToString();
         }
 
-       
-        /// <summary>
-        /// returns the original public key that the server created
-        /// </summary>
-        /// <returns></returns>
-        public string GetServerPublicKey()
-        {
-            return ServerPublicKey;
-        }
     }
 }

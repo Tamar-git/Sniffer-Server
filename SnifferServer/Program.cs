@@ -31,8 +31,8 @@ namespace SnifferServer
                 // AcceptTcpClient - Blocking call
                 // Execute will not continue until a connection is established
 
-                // We create an instance of ChatClient so the server will be able to 
-                // server multiple client at the same time.
+                // We create an instance of ClientRequestHandler so the server will be able to 
+                // serve multiple client at the same time.
                 ClientRequestHandler user = new ClientRequestHandler(listener.AcceptTcpClient());
             }
         }
