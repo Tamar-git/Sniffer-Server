@@ -70,7 +70,7 @@ namespace SnifferServer
         }
 
         /// <summary>
-        /// decryptes encrypted bytes using AES protocol
+        /// Decryptes encrypted bytes using AES protocol
         /// </summary>
         /// <param name="cipherText">encrypted bytes</param>
         /// <param name="Key"></param>
