@@ -219,8 +219,9 @@ namespace SnifferServer
                     string[] detailsArray = null;
                     if (aes == null)
                     {
-                        Console.WriteLine(BytesToString(arrived));
-                        AnalyzingAesKeyAndIvMessage(arrived, out requestNumber, out keyLength, out ivLength, out key, out iv);
+                        byte[] decrypted = rsa.RSADecrypt(arrived);
+                        Console.WriteLine("AES details: " + BytesToString(decrypted));
+                        AnalyzingAesKeyAndIvMessage(decrypted, out requestNumber, out keyLength, out ivLength, out key, out iv);
                     }
                     else
                     {
