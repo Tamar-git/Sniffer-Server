@@ -120,7 +120,7 @@ namespace SnifferServer
             try
             {
                 //Pass the filepath and filename to the StreamWriter Constructor
-                StreamWriter sw = new StreamWriter(@"C:\Users\תמר\source\repos\SnifferServer\SnifferServer\" + username + ".txt", true);
+                StreamWriter sw = new StreamWriter(@"C:\Users\תמר\source\repos\SnifferServer\SnifferServer\" + username + ".log", true);
                 //Write a line of text
                 sw.WriteLine(data);
                 
