@@ -11,6 +11,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Forms;
 
 namespace SnifferServer
 {
@@ -228,13 +229,11 @@ namespace SnifferServer
                         messageReceived = aes.DecryptStringFromBytes(arrived, aes.GetKey(), aes.GetIV());
                         //messageReceived = System.Text.Encoding.ASCII.GetString(arrived, 0, arrived.Length); ;
                         Console.WriteLine("received: " + messageReceived);
-                        //string messageReceived = System.Text.Encoding.ASCII.GetString(bytesDecrypted, 0, bytesDecrypted.Length);
                         string[] arrayReceived = messageReceived.Split('#');
                         requestNumber = Convert.ToInt32(arrayReceived[0]);
                         details = arrayReceived[1];
                         detailsArray = details.Split('/');
                     }
-                    
 
                     string status = "ok";
                     if (requestNumber == signUpRequest)
@@ -253,9 +252,7 @@ namespace SnifferServer
                             string code = EmailVerification(email);
                             SendAesEncryptedMessage(EmailResponse + "#" + code + "#" + code.Length);
 
-                            //opens a new object that handles the logs of the sniffer
-                            //SnifferLogs snifferLogs = new SnifferLogs(client, name);
-                            //return;
+
                         }
                     }
                     else if (requestNumber == signInRequest)
@@ -278,6 +275,13 @@ namespace SnifferServer
                             SendAesEncryptedMessage(EmailResponse + "#" + code + "#" + code.Length);
                         }
 
+                        if (check == 2)
+                        {
+                            //opens a new object that handles the logs of the sniffer
+                            SnifferLogs snifferLogs = new SnifferLogs(client, name);
+                            return;
+                        }
+
                     }
                     else if (requestNumber == QuestionRequest)
                     {
@@ -295,6 +299,9 @@ namespace SnifferServer
                         {
                             sql.ChangeEmailConfirmed(name);
                             SendAesEncryptedMessage(RegisterStatusResponse + "#" + "ok" + "#2");
+                            //opens a new object that handles the logs of the sniffer
+                            SnifferLogs snifferLogs = new SnifferLogs(client, name);
+                            return;
                         }
                         else
                         {
@@ -437,7 +444,7 @@ namespace SnifferServer
             key = new byte[keyLength];
             Array.Copy(bytesArray, 3, key, 0, keyLength);
             iv = new byte[ivLength];
-            Array.Copy(bytesArray, 3+keyLength, iv, 0, ivLength);
+            Array.Copy(bytesArray, 3 + keyLength, iv, 0, ivLength);
 
         }
     }
