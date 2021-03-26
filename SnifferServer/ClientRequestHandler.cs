@@ -224,8 +224,8 @@ namespace SnifferServer
                     }
                     else
                     {
-                        //messageReceived = aes.DecryptStringFromBytes(arrived, aes.GetKey(), aes.GetIV());
-                        messageReceived = System.Text.Encoding.ASCII.GetString(arrived, 0, arrived.Length); ;
+                        messageReceived = aes.DecryptStringFromBytes(arrived, aes.GetKey(), aes.GetIV());
+                        //messageReceived = System.Text.Encoding.ASCII.GetString(arrived, 0, arrived.Length); ;
                         Console.WriteLine("received: " + messageReceived);
                         //string messageReceived = System.Text.Encoding.ASCII.GetString(bytesDecrypted, 0, bytesDecrypted.Length);
                         string[] arrayReceived = messageReceived.Split('#');
