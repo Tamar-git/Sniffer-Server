@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data.SqlClient;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Mail;
 using System.Net.Sockets;
@@ -163,9 +164,20 @@ namespace SnifferServer
         /// gets a string message, encrypts it and sends it to the client
         /// </summary>
         /// <param name="message">string to encrypt and send to the client</param>
-        public void SendEncryptedMessage(string message)
+        public void SendRsaEncryptedMessage(string message)
         {
+            Console.WriteLine("sending rsa: " + message);
             SendMessage(rsa.RSAEncrypt(ByteConverter.GetBytes(message)));
+        }
+
+        /// <summary>
+        /// gets a string message, encrypts it using Aes protocol and sends it to the client
+        /// </summary>
+        /// <param name="message">string to encrypt and send to the server</param>
+        private void SendAesEncryptedMessage(string message)
+        {
+            Console.WriteLine("sending aes: " + message);
+            SendMessage(aes.EncryptStringToBytes(message, aes.GetKey(), aes.GetIV()));
         }
 
         /// <summary>
@@ -183,28 +195,45 @@ namespace SnifferServer
                     // call EndRead to handle the end of an async read.
                     bytesRead = client.GetStream().EndRead(ar);
                 }
-                // MessageBox.Show("in receive server");
+                Console.WriteLine("in receive server");
                 if (rsa == null)
                 {
                     //string key = Encoding.ASCII.GetString(data, 0, bytesRead).Split('#')[1];
                     string key = ByteConverter.GetString(data, 0, bytesRead).Split('#')[1];
                     // an Rsa crypto object is created
                     rsa = new RsaCrypto(key);
+                    Console.WriteLine("created rsa object");
                     string messageToSend = PublicKeyTransfer + "#" + rsa.GetServerPublicKey() + "#" + rsa.GetServerPublicKey().Length;
                     SendMessage(ByteConverter.GetBytes(messageToSend));
                 }
+
                 else
                 {
                     byte[] arrived = new byte[bytesRead];
                     Array.Copy(data, arrived, bytesRead);
-                    byte[] bytesDecrypted = rsa.RSADecrypt(arrived);
-                    string messageReceived = ByteConverter.GetString(bytesDecrypted);
-                    //string messageReceived = System.Text.Encoding.ASCII.GetString(bytesDecrypted, 0, bytesDecrypted.Length);
-                    string[] arrayReceived = messageReceived.Split('#');
-                    int requestNumber = Convert.ToInt32(arrayReceived[0]);
-                    string details = arrayReceived[1];
-                    string[] detailsArray = details.Split('/');
-                    // MessageBox.Show("server - order: " + order + " ,text: " + details);
+                    string messageReceived = "";
+                    int requestNumber;
+                    int keyLength, ivLength;
+                    byte[] key = null, iv = null;
+                    string details = null;
+                    string[] detailsArray = null;
+                    if (aes == null)
+                    {
+                        Console.WriteLine(BytesToString(arrived));
+                        AnalyzingAesKeyAndIvMessage(arrived, out requestNumber, out keyLength, out ivLength, out key, out iv);
+                    }
+                    else
+                    {
+                        //messageReceived = aes.DecryptStringFromBytes(arrived, aes.GetKey(), aes.GetIV());
+                        messageReceived = System.Text.Encoding.ASCII.GetString(arrived, 0, arrived.Length); ;
+                        Console.WriteLine("received: " + messageReceived);
+                        //string messageReceived = System.Text.Encoding.ASCII.GetString(bytesDecrypted, 0, bytesDecrypted.Length);
+                        string[] arrayReceived = messageReceived.Split('#');
+                        requestNumber = Convert.ToInt32(arrayReceived[0]);
+                        details = arrayReceived[1];
+                        detailsArray = details.Split('/');
+                    }
+                    
 
                     string status = "ok";
                     if (requestNumber == signUpRequest)
@@ -214,18 +243,18 @@ namespace SnifferServer
                         if (!b)
                         {
                             status = "not ok";
-                            SendEncryptedMessage(RegisterStatusResponse + "#" + status + "#" + status.Length);
+                            SendAesEncryptedMessage(RegisterStatusResponse + "#" + status + "#" + status.Length);
                         }
                         else
                         {
                             name = detailsArray[0];
                             email = detailsArray[2];
                             string code = EmailVerification(email);
-                            SendEncryptedMessage(EmailResponse + "#" + code + "#" + code.Length);
+                            SendAesEncryptedMessage(EmailResponse + "#" + code + "#" + code.Length);
 
                             //opens a new object that handles the logs of the sniffer
-                            SnifferLogs snifferLogs = new SnifferLogs(client, name);
-                            return;
+                            //SnifferLogs snifferLogs = new SnifferLogs(client, name);
+                            //return;
                         }
                     }
                     else if (requestNumber == signInRequest)
@@ -241,11 +270,11 @@ namespace SnifferServer
 
                         if (check != 1)
                             //SendMessage(RegisterStatusResponse + "#" + status + "#" + status.Length);
-                            SendEncryptedMessage(RegisterStatusResponse + "#" + status + "#" + status.Length);
+                            SendAesEncryptedMessage(RegisterStatusResponse + "#" + status + "#" + status.Length);
                         else
                         {
                             string code = EmailVerification(sql.GetEmail(name));
-                            SendEncryptedMessage(EmailResponse + "#" + code + "#" + code.Length);
+                            SendAesEncryptedMessage(EmailResponse + "#" + code + "#" + code.Length);
                         }
 
                     }
@@ -253,7 +282,7 @@ namespace SnifferServer
                     {
                         string question = sql.GetQuestion(details);
                         name = details;
-                        SendEncryptedMessage(QuestionResponse + "#" + question + "#" + question.Length);
+                        SendAesEncryptedMessage(QuestionResponse + "#" + question + "#" + question.Length);
                     }
                     else if (requestNumber == CodeRequest)
                     {
@@ -264,12 +293,12 @@ namespace SnifferServer
                         if (compare)
                         {
                             sql.ChangeEmailConfirmed(name);
-                            SendEncryptedMessage(RegisterStatusResponse + "#" + "ok" + "#2");
+                            SendAesEncryptedMessage(RegisterStatusResponse + "#" + "ok" + "#2");
                         }
                         else
                         {
                             string code = EmailVerification(sql.GetEmail(name));
-                            SendEncryptedMessage(EmailResponse + "#" + code + "#" + code.Length);
+                            SendAesEncryptedMessage(EmailResponse + "#" + code + "#" + code.Length);
                         }
 
                     }
@@ -278,12 +307,12 @@ namespace SnifferServer
                         bool checkAnswer = sql.GetAnswer(name).Equals(details);
                         if (checkAnswer)
                             //let the user invent a new password
-                            SendEncryptedMessage(PasswordRequest + "##0");
+                            SendAesEncryptedMessage(PasswordRequest + "##0");
                         else
                         {
                             string question = sql.GetQuestion(details);
                             name = details;
-                            SendEncryptedMessage(QuestionResponse + "#" + question + "/" + "#" + question.Length);
+                            SendAesEncryptedMessage(QuestionResponse + "#" + question + "/" + "#" + question.Length);
                         }
                     }
                     else if (requestNumber == PasswordResponse)
@@ -293,7 +322,7 @@ namespace SnifferServer
                         if (!b)
                             isChanged = "not ok";
 
-                        SendEncryptedMessage(PasswordChangeStatusResponse + "#" + isChanged + "#" + isChanged.Length);
+                        SendAesEncryptedMessage(PasswordChangeStatusResponse + "#" + isChanged + "#" + isChanged.Length);
                     }
                     else if (requestNumber == PublicKeyTransfer)
                     {
@@ -310,11 +339,11 @@ namespace SnifferServer
                         //sendEncryptedMessage(rsa.Encrypt("hello"));
 
                     }
-                    else if(requestNumber == AesKeyTransfer)
+                    else if (requestNumber == AesKeyTransfer)
                     {
-                        byte[] key = ByteConverter.GetBytes(details);
-                        aes = new AesCrypto(key);
-                        //Console.WriteLine("AES key {0}:", details);
+                        aes = new AesCrypto(key, iv);
+                        Console.WriteLine("received-   Key: {0}\nIV: {1}", BytesToString(key), BytesToString(iv));
+                        Console.WriteLine("aes object- Key: {0}\nIV: {1}", BytesToString(aes.GetKey()), BytesToString(aes.GetIV()));
                     }
                 }
                 lock (client.GetStream())
@@ -326,7 +355,7 @@ namespace SnifferServer
             catch (Exception ex)
             {
                 Console.WriteLine("catch recieve");
-                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.ToString());
             }
         }
 
@@ -377,6 +406,38 @@ namespace SnifferServer
             }
 
             return s;
+        }
+
+        public static string BytesToString(byte[] arr)
+        {
+            string s = "";
+            foreach (byte b in arr)
+            {
+                s += b + " ";
+            }
+            return s;
+        }
+
+        /// <summary>
+        /// gets the information from a byte array from the client that includes the AES key and iv
+        /// </summary>
+        /// <param name="bytesArray">bytes from the client</param>
+        /// <param name="requestNumber">int that implies the content of the message</param>
+        /// <param name="keyLength">length in bytes of the key</param>
+        /// <param name="ivLength">length in bytes of the iv</param>
+        /// <param name="key">AES key in bytes</param>
+        /// <param name="iv">AES iv in bytes</param>
+        public void AnalyzingAesKeyAndIvMessage(byte[] bytesArray, out int requestNumber, out int keyLength, out int ivLength,
+                                                out byte[] key, out byte[] iv)
+        {
+            requestNumber = (int)bytesArray[0];
+            keyLength = (int)bytesArray[1];
+            ivLength = (int)bytesArray[2];
+            key = new byte[keyLength];
+            Array.Copy(bytesArray, 3, key, 0, keyLength);
+            iv = new byte[ivLength];
+            Array.Copy(bytesArray, 3+keyLength, iv, 0, ivLength);
+
         }
     }
 }

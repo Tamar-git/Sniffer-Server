@@ -16,20 +16,28 @@ namespace SnifferServer
         /// constructor that creates an Aes object with a key
         /// </summary>
         /// <param name="key">AES key from the client</param>
-        public AesCrypto(byte[] key)
+        public AesCrypto(byte[] key, byte[] iv)
         {
             aes = Aes.Create();
             aes.Key = key;
+            aes.IV = iv;
         }
 
+        public byte[] GetKey()
+        {
+            return aes.Key;
+        }
+
+        public byte[] GetIV()
+        {
+            return aes.IV;
+        }
         /// <summary>
         ///  encryptes plain text using AES protocol
         /// </summary>
         /// <param name="plainText">original text string</param>
-        /// <param name="Key"></param>
-        /// <param name="IV"></param>
         /// <returns>encrypted bytes</returns>
-        public byte[] EncryptStringToBytes_Aes(string plainText, byte[] Key, byte[] IV)
+        public byte[] EncryptStringToBytes(string plainText, byte[] Key, byte[] IV)
         {
             // Check arguments.
             if (plainText == null || plainText.Length <= 0)
@@ -46,7 +54,7 @@ namespace SnifferServer
             {
                 aesAlg.Key = Key;
                 aesAlg.IV = IV;
-
+                aesAlg.Padding = PaddingMode.Zeros;
                 // Create an encryptor to perform the stream transform.
                 ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
 
@@ -73,10 +81,8 @@ namespace SnifferServer
         /// Decryptes encrypted bytes using AES protocol
         /// </summary>
         /// <param name="cipherText">encrypted bytes</param>
-        /// <param name="Key"></param>
-        /// <param name="IV"></param>
         /// <returns>decrypted string</returns>
-        public string DecryptStringFromBytes_Aes(byte[] cipherText, byte[] Key, byte[] IV)
+        public string DecryptStringFromBytes(byte[] cipherText, byte[] Key, byte[] IV)
         {
             // Check arguments.
             if (cipherText == null || cipherText.Length <= 0)
@@ -85,38 +91,46 @@ namespace SnifferServer
                 throw new ArgumentNullException("Key");
             if (IV == null || IV.Length <= 0)
                 throw new ArgumentNullException("IV");
-
-            // Declare the string used to hold
-            // the decrypted text.
-            string plaintext = null;
-
-            // Create an Aes object
-            // with the specified key and IV.
-            using (Aes aesAlg = Aes.Create())
+            try
             {
-                aesAlg.Key = Key;
-                aesAlg.IV = IV;
+                // Declare the string used to hold
+                // the decrypted text.
+                string plaintext = null;
+                
 
-                // Create a decryptor to perform the stream transform.
-                ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
-
-                // Create the streams used for decryption.
-                using (MemoryStream msDecrypt = new MemoryStream(cipherText))
+                // Create an Aes object
+                // with the specified key and IV.
+                using (Aes aesAlg = Aes.Create())
                 {
-                    using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
-                    {
-                        using (StreamReader srDecrypt = new StreamReader(csDecrypt))
-                        {
+                    aesAlg.Key = Key;
+                    aesAlg.IV = IV;
+                    aesAlg.Padding = PaddingMode.Zeros;
+                    // Create a decryptor to perform the stream transform.
+                    ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
 
-                            // Read the decrypted bytes from the decrypting stream
-                            // and place them in a string.
-                            plaintext = srDecrypt.ReadToEnd();
+                    // Create the streams used for decryption.
+                    using (MemoryStream msDecrypt = new MemoryStream(cipherText))
+                    {
+                        using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
+                        {
+                            using (StreamReader srDecrypt = new StreamReader(csDecrypt))
+                            {
+
+                                // Read the decrypted bytes from the decrypting stream
+                                // and place them in a string.
+                                plaintext = srDecrypt.ReadToEnd();
+                            }
                         }
                     }
                 }
+                return plaintext;
             }
+            catch (CryptographicException e)
+            {
+                Console.WriteLine(e.ToString());
 
-            return plaintext;
+                return null;
+            }
         }
     }
 }
