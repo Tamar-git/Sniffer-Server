@@ -342,3 +342,4 @@ healthchecksdb
 # ignore output log files
 Log*.log
 *.txt
+*.csv

@@ -24,11 +24,19 @@ namespace SnifferServer
         // used for sending and reciving data
         private byte[] data;
 
+        // requests' kinds
+        const int packetDetailsResponse = 1;
+
+        /// <summary>
+        /// constructor that cretes a new object and start listening to messages
+        /// </summary>
+        /// <param name="client">TcpClient object</param>
+        /// <param name="username">the client's username</param>
         public SnifferLogs(TcpClient client, string username)
         {
             this.client = client;
             this.username = username;
-            
+
             // get the ip address of the client to register him with our client list
             clientIP = client.Client.RemoteEndPoint.ToString();
 
@@ -43,7 +51,7 @@ namespace SnifferServer
                                           System.Convert.ToInt32(client.ReceiveBufferSize),
                                           ReceiveMessage,
                                           null);
-                                         
+
         }
 
         /// <summary>
@@ -95,9 +103,13 @@ namespace SnifferServer
 
                 // MessageBox.Show("in receive server");
                 string messageReceived = System.Text.Encoding.ASCII.GetString(data, 0, bytesRead);
-
-                AddToLog(messageReceived);
-
+                string[] arrayReceived = messageReceived.Split('#');
+                int requestNumber = Convert.ToInt32(arrayReceived[0]);
+                string details = arrayReceived[1];
+                if (requestNumber == packetDetailsResponse)
+                {
+                    AddToLog(details);
+                }
                 lock (client.GetStream())
                 {
                     // continue reading from the client
@@ -120,10 +132,10 @@ namespace SnifferServer
             try
             {
                 //Pass the filepath and filename to the StreamWriter Constructor
-                StreamWriter sw = new StreamWriter(@"C:\Users\תמר\source\repos\SnifferServer\SnifferServer\" + username + ".log", true);
+                StreamWriter sw = new StreamWriter(GetFilePath(), true);
                 //Write a line of text
                 sw.WriteLine(data);
-                
+
                 //Close the file
                 sw.Close();
             }
@@ -131,7 +143,20 @@ namespace SnifferServer
             {
                 Console.WriteLine("Exception: " + e.Message);
             }
-            
+
+        }
+
+        /// <summary>
+        /// builds a log file path according to the date and the client's username
+        /// </summary>
+        /// <returns>string that represents the path</returns>
+        public string GetFilePath()
+        {
+            string s = "LOG_";
+            string date = DateTime.Today.ToLocalTime().ToString("yyyyMMdd");
+            string name = username;
+            s += date + "_" + name + ".csv";
+            return @"C:\Users\תמר\source\repos\SnifferServer\SnifferServer\" + s;
         }
 
         public void Connection(TcpPacket packet)
