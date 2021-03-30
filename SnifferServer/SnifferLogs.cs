@@ -26,6 +26,8 @@ namespace SnifferServer
 
         // requests' kinds
         const int packetDetailsResponse = 1;
+        const int logRequest = 2;
+        const int logResponse = 3;
 
         /// <summary>
         /// constructor that cretes a new object and start listening to messages
@@ -86,7 +88,7 @@ namespace SnifferServer
         }
 
         /// <summary>
-        /// recursive method that recieves a message from the server and handles it according to the request or response number
+        /// recursive method that recieves a message from the client and handles it according to the request or response number
         /// </summary>
         /// <param name="ar"></param>
         public void ReceiveMessage(IAsyncResult ar)
@@ -110,6 +112,10 @@ namespace SnifferServer
                 {
                     AddToLog(details);
                 }
+                else if (requestNumber == logRequest)
+                {
+                    SendFile(details);
+                }
                 lock (client.GetStream())
                 {
                     // continue reading from the client
@@ -132,7 +138,7 @@ namespace SnifferServer
             try
             {
                 //Pass the filepath and filename to the StreamWriter Constructor
-                StreamWriter sw = new StreamWriter(GetFilePath(), true);
+                StreamWriter sw = new StreamWriter(GetFilePath(GetTodayDate()), true);
                 //Write a line of text
                 sw.WriteLine(data);
 
@@ -146,17 +152,38 @@ namespace SnifferServer
 
         }
 
+        public string GetTodayDate()
+        {
+            return DateTime.Today.ToLocalTime().ToString("yyyyMMdd");
+        }
+
         /// <summary>
         /// builds a log file path according to the date and the client's username
         /// </summary>
+        /// <param name="date">date to insert into the path</param>
         /// <returns>string that represents the path</returns>
-        public string GetFilePath()
+        public string GetFilePath(string date)
         {
             string s = "LOG_";
-            string date = DateTime.Today.ToLocalTime().ToString("yyyyMMdd");
             string name = username;
             s += date + "_" + name + ".csv";
             return @"C:\Users\תמר\source\repos\SnifferServer\SnifferServer\" + s;
+        }
+
+        public void SendFile(string date)
+        {
+            string filePath = GetFilePath(date);
+            //StreamWriter sWriter = new StreamWriter(client.GetStream());
+
+            byte[] bytes = File.ReadAllBytes(filePath);
+
+            string dataToSend = bytes.Length.ToString() + "/" + filePath;
+            string introToSend = logResponse + "#" + dataToSend + "#" + dataToSend.Length;
+
+            SendMessage(introToSend);
+
+            Console.WriteLine("Sending file " + date);
+            client.Client.SendFile(filePath);
         }
 
         public void Connection(TcpPacket packet)
