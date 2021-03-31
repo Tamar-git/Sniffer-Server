@@ -30,7 +30,7 @@ namespace SnifferServer
         const int logResponse = 3;
 
         /// <summary>
-        /// constructor that cretes a new object and start listening to messages
+        /// constructor that creates a new object and start listening to messages
         /// </summary>
         /// <param name="client">TcpClient object</param>
         /// <param name="username">the client's username</param>
@@ -152,6 +152,10 @@ namespace SnifferServer
 
         }
 
+        /// <summary>
+        /// returns today's date
+        /// </summary>
+        /// <returns>string contains the date in the form of yyyyMMdd</returns>
         public string GetTodayDate()
         {
             return DateTime.Today.ToLocalTime().ToString("yyyyMMdd");
@@ -170,6 +174,10 @@ namespace SnifferServer
             return @"C:\Users\תמר\source\repos\SnifferServer\SnifferServer\" + s;
         }
 
+        /// <summary>
+        /// sends a log file to the client according to the requested date
+        /// </summary>
+        /// <param name="date">requested date</param>
         public void SendFile(string date)
         {
             string filePath = GetFilePath(date);

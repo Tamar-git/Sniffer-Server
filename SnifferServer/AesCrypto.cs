@@ -23,11 +23,19 @@ namespace SnifferServer
             aes.IV = iv;
         }
 
+        /// <summary>
+        /// retrieves the Aes key
+        /// </summary>
+        /// <returns>key</returns>
         public byte[] GetKey()
         {
             return aes.Key;
         }
 
+        /// <summary>
+        /// retrieves the Aes IV
+        /// </summary>
+        /// <returns>IV</returns>
         public byte[] GetIV()
         {
             return aes.IV;
