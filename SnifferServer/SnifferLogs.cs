@@ -28,6 +28,7 @@ namespace SnifferServer
         const int packetDetailsResponse = 1;
         const int logRequest = 2;
         const int logResponse = 3;
+        const int noLogResponse = 4;
 
         /// <summary>
         /// constructor that creates a new object and start listening to messages
@@ -182,16 +183,22 @@ namespace SnifferServer
         {
             string filePath = GetFilePath(date);
             //StreamWriter sWriter = new StreamWriter(client.GetStream());
+            if (File.Exists(filePath)){
+                byte[] bytes = File.ReadAllBytes(filePath);
 
-            byte[] bytes = File.ReadAllBytes(filePath);
+                string dataToSend = bytes.Length.ToString() + "/" + filePath;
+                string introToSend = logResponse + "#" + dataToSend + "#" + dataToSend.Length;
 
-            string dataToSend = bytes.Length.ToString() + "/" + filePath;
-            string introToSend = logResponse + "#" + dataToSend + "#" + dataToSend.Length;
+                SendMessage(introToSend);
 
-            SendMessage(introToSend);
-
-            Console.WriteLine("Sending file " + date);
-            client.Client.SendFile(filePath);
+                Console.WriteLine("Sending file " + date);
+                client.Client.SendFile(filePath);
+            }
+            else
+            {
+                string message = "null";
+                SendMessage(noLogResponse + "#" + message + "#" + message.Length);
+            }
         }
 
         public void Connection(TcpPacket packet)
