@@ -278,7 +278,7 @@ namespace SnifferServer
                         if (check == 2)
                         {
                             //opens a new object that handles the logs of the sniffer
-                            SnifferLogs snifferLogs = new SnifferLogs(client, name);
+                            SnifferLogs snifferLogs = new SnifferLogs(client, name, aes);
                             return;
                         }
 
@@ -300,7 +300,7 @@ namespace SnifferServer
                             sql.ChangeEmailConfirmed(name);
                             SendAesEncryptedMessage(RegisterStatusResponse + "#" + "ok" + "#2");
                             //opens a new object that handles the logs of the sniffer
-                            SnifferLogs snifferLogs = new SnifferLogs(client, name);
+                            SnifferLogs snifferLogs = new SnifferLogs(client, name, aes);
                             return;
                         }
                         else

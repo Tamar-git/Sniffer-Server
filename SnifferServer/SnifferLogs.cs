@@ -24,6 +24,8 @@ namespace SnifferServer
         // used for sending and reciving data
         private byte[] data;
 
+        AesCrypto aes; // AES object for encryption and decryption
+
         // requests' kinds
         const int packetDetailsResponse = 1;
         const int logRequest = 2;
@@ -35,11 +37,11 @@ namespace SnifferServer
         /// </summary>
         /// <param name="client">TcpClient object</param>
         /// <param name="username">the client's username</param>
-        public SnifferLogs(TcpClient client, string username)
+        public SnifferLogs(TcpClient client, string username, AesCrypto aes)
         {
             this.client = client;
             this.username = username;
-
+            this.aes = aes;
             // get the ip address of the client to register him with our client list
             clientIP = client.Client.RemoteEndPoint.ToString();
 
@@ -58,10 +60,10 @@ namespace SnifferServer
         }
 
         /// <summary>
-        /// gets a string message and sends it to the client
+        /// gets a message and sends it to the client
         /// </summary>
-        /// <param name="message">string to send to the client</param>
-        public void SendMessage(string message)
+        /// <param name="message">bytes to send to the client</param>
+        public void SendMessage(byte[] message)
         {
             try
             {
@@ -78,14 +80,24 @@ namespace SnifferServer
                 // MessageBox.Show("server sends " + message);
 
                 // Send data to the client
-                byte[] bytesToSend = System.Text.Encoding.ASCII.GetBytes(message);
-                ns.Write(bytesToSend, 0, bytesToSend.Length);
+                //byte[] bytesToSend = System.Text.Encoding.ASCII.GetBytes(message);
+                ns.Write(message, 0, message.Length);
                 ns.Flush();
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
             }
+        }
+
+        /// <summary>
+        /// gets a string message, encrypts it using Aes protocol and sends it to the client
+        /// </summary>
+        /// <param name="message">string to encrypt and send to the server</param>
+        private void SendAesEncryptedMessage(string message)
+        {
+            Console.WriteLine("sending aes: " + message);
+            SendMessage(aes.EncryptStringToBytes(message, aes.GetKey(), aes.GetIV()));
         }
 
         /// <summary>
@@ -105,7 +117,10 @@ namespace SnifferServer
                 }
 
                 // MessageBox.Show("in receive server");
-                string messageReceived = System.Text.Encoding.ASCII.GetString(data, 0, bytesRead);
+                byte[] arrived = new byte[bytesRead];
+                Array.Copy(data, arrived, bytesRead);
+                string messageReceived = aes.DecryptStringFromBytes(arrived, aes.GetKey(), aes.GetIV());
+                //string messageReceived = System.Text.Encoding.ASCII.GetString(data, 0, bytesRead);
                 string[] arrayReceived = messageReceived.Split('#');
                 int requestNumber = Convert.ToInt32(arrayReceived[0]);
                 string details = arrayReceived[1];
@@ -189,7 +204,7 @@ namespace SnifferServer
                 string dataToSend = bytes.Length.ToString() + "/" + filePath;
                 string introToSend = logResponse + "#" + dataToSend + "#" + dataToSend.Length;
 
-                SendMessage(introToSend);
+                SendAesEncryptedMessage(introToSend);
 
                 Console.WriteLine("Sending file " + date);
                 client.Client.SendFile(filePath);
@@ -197,7 +212,7 @@ namespace SnifferServer
             else
             {
                 string message = "null";
-                SendMessage(noLogResponse + "#" + message + "#" + message.Length);
+                SendAesEncryptedMessage(noLogResponse + "#" + message + "#" + message.Length);
             }
         }
 
