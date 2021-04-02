@@ -16,11 +16,8 @@ namespace SnifferServer
     {
         // information about the client
         private TcpClient client;
-        private string clientIP;
         private string username;
 
-        ICaptureDevice device;
-        private PacketArrivalEventHandler arrivalEventHandler;
         // used for sending and reciving data
         private byte[] data;
 
@@ -37,13 +34,12 @@ namespace SnifferServer
         /// </summary>
         /// <param name="client">TcpClient object</param>
         /// <param name="username">the client's username</param>
+        /// <param name="aes">AES crypto object</param>
         public SnifferLogs(TcpClient client, string username, AesCrypto aes)
         {
             this.client = client;
             this.username = username;
             this.aes = aes;
-            // get the ip address of the client to register him with our client list
-            clientIP = client.Client.RemoteEndPoint.ToString();
 
             // Read data from the client async
             data = new byte[client.ReceiveBufferSize];
@@ -77,10 +73,7 @@ namespace SnifferServer
                     ns = client.GetStream();
                 }
 
-                // MessageBox.Show("server sends " + message);
-
                 // Send data to the client
-                //byte[] bytesToSend = System.Text.Encoding.ASCII.GetBytes(message);
                 ns.Write(message, 0, message.Length);
                 ns.Flush();
             }
@@ -116,11 +109,9 @@ namespace SnifferServer
                     bytesRead = client.GetStream().EndRead(ar);
                 }
 
-                // MessageBox.Show("in receive server");
                 byte[] arrived = new byte[bytesRead];
                 Array.Copy(data, arrived, bytesRead);
                 string messageReceived = aes.DecryptStringFromBytes(arrived, aes.GetKey(), aes.GetIV());
-                //string messageReceived = System.Text.Encoding.ASCII.GetString(data, 0, bytesRead);
                 string[] arrayReceived = messageReceived.Split('#');
                 int requestNumber = Convert.ToInt32(arrayReceived[0]);
                 string details = arrayReceived[1];
@@ -140,7 +131,7 @@ namespace SnifferServer
             }
             catch (Exception ex)
             {
-                Console.WriteLine("catch recieve");
+                Console.WriteLine("catch recieve\n" + ex.ToString());
             }
         }
 
@@ -197,7 +188,6 @@ namespace SnifferServer
         public void SendFile(string date)
         {
             string filePath = GetFilePath(date);
-            //StreamWriter sWriter = new StreamWriter(client.GetStream());
             if (File.Exists(filePath)){
                 byte[] bytes = File.ReadAllBytes(filePath);
 
@@ -216,142 +206,5 @@ namespace SnifferServer
             }
         }
 
-        public void Connection(TcpPacket packet)
-        {
-            IpPacket ipPacket = (IpPacket)packet.ParentPacket;
-            string m_srcIp = ipPacket.SourceAddress.ToString();
-            string m_dstIp = ipPacket.DestinationAddress.ToString();
-            int m_srcPort = (ushort)packet.SourcePort;
-            int m_dstPort = (ushort)packet.DestinationPort;
-            _ = packet.Bytes;
-        }
-
-        /*private void OnPacketArrival(object sender, SharpPcap.CaptureEventArgs e)
-        {
-            var rawPacket = e.Packet;
-            var etherPacket = Packet.ParsePacket(rawPacket.LinkLayerType, rawPacket.Data);
-            var ipPacket = (IpPacket)etherPacket.PayloadPacket;
-            var tcpPacket = (TcpPacket)etherPacket.PayloadPacket.PayloadPacket;
-            var payload = etherPacket.PayloadPacket.PayloadPacket.PayloadData;
-            var toServer = tcpPacket.DestinationPort == 20100;
-
-            if (payload.Length < 1)
-                return;
-
-            if (toServer && _srcPort == 0)
-            {
-                _srcPort = tcpPacket.SourcePort;
-                _srcIP = ipPacket.SourceAddress;
-                _destIP = ipPacket.DestinationAddress;
-                var ether = (EthernetPacket)etherPacket;
-
-                _destPhysical = ether.DestinationHwAddress;
-                _srcPhsyical = ether.SourceHwAddress;
-            }
-
-            if (toServer && !put)
-            {
-                put = true;
-                Console.WriteLine(etherPacket);
-            }
-            Gunz2Packet packet = new Gunz2Packet(payload, _cryptKey);
-            if (packet.pktID == 0xC1C)
-            {
-                Array.Clear(_cryptKey, 0, _cryptKey.Length);
-                var index = 33;
-                var cryptKeySeed = BitConverter.ToUInt32(packet.data, index);
-
-                MakeCryptKey(cryptKeySeed);
-                var writer = new StreamWriter("gunz2shark.log", true);
-                writer.WriteLine("[KEY]");
-                Program.PacketLog(_cryptKey, 0, _cryptKey.Length, writer);
-                writer.WriteLine("[END KEY]\n");
-                writer.Close();
-            }
-
-            if (packet.pktID == 0xDFC)
-            {
-                SendSupplyBoxOpen();
-            }
-
-            var cmd = _commands.Find(x => x.GetOpcode() == packet.pktID);
-
-            if (cmd != null && !packet.flags.unkFlag3)
-            {
-
-                File.WriteAllBytes(cmd.GetOpcode() + ".bin", packet.data);
-                var writer = new StreamWriter("gunz2shark.log", true);
-
-                var output = string.Format("[{0}] | {1} | {2}({2:X}) | Parameters ->", toServer ? "C2S" : "S2C", cmd.Desc, cmd.GetOpcode());
-
-                if (cmd.Params != null)
-                {
-                    foreach (var param in cmd.Params)
-                        output += string.Format("{0} -> ", param.Type);
-                }
-
-                output += "end";
-
-                Console.WriteLine(output);
-                writer.WriteLine(output);
-
-                Program.PacketLog(packet.data, 0, (int)packet.data.Length, writer);
-                writer.Close();
-            }
-            else
-                Console.WriteLine("Unknown command: {0}", packet.pktID);
-        }*/
-        /* private void device_OnPacketArrival(object sender, SharpPcap.CaptureEventArgs e)
-                {
-                    if (e.Packet.LinkLayerType == PacketDotNet.LinkLayers.Ethernet)
-                    {
-                        PacketDotNet.Packet packet;
-
-                        long TotalPacketSize = e.Packet.Data.Length;
-                        BytesRead += TotalPacketSize;
-                        ++PacketsSeen;
-
-                        if ((PacketsSeen > 0) && ((PacketsSeen % 10000) == 0))
-                        {
-                            DebugLog.ConsoleWindow.SelectedIndex = DebugLog.ConsoleWindow.Items.Count - 1;
-                            int Progress = (int)((float)BytesRead / (float)CaptureFileSize * 100);
-                            ProgressBar.Value = Progress;
-
-                            Application.DoEvents();
-                        }
-
-                        try
-                        {
-                            packet = PacketDotNet.Packet.ParsePacket(e.Packet);
-                        }
-                        catch
-                        {
-                            return;
-                        }
-
-                        var ethernetPacket = (PacketDotNet.EthernetPacket)packet;
-
-                        var udpPacket = PacketDotNet.UdpPacket.GetEncapsulated(packet);
-
-                        if (udpPacket != null)
-                        {
-                            var ipPacket = (PacketDotNet.IpPacket)udpPacket.ParentPacket;
-                            System.Net.IPAddress srcIp = ipPacket.SourceAddress;
-                            System.Net.IPAddress dstIp = ipPacket.DestinationAddress;
-
-                            byte[] Payload = udpPacket.PayloadData;
-
-                            Int32 l = udpPacket.Length - udpPacket.Header.GetLength(0);
-
-                            if (l > 0)
-                            {
-                                Array.Resize(ref Payload, l);
-
-                                StreamProcessor.ProcessPacket(srcIp, dstIp, udpPacket.SourcePort, udpPacket.DestinationPort, Payload, packet.Timeval.Date);
-                            }
-                        }
-                    }
-                }
-             */
     }
 }
