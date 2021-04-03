@@ -315,8 +315,8 @@ namespace SnifferServer
 
             mail.From = new MailAddress("tamarg.project@gmail.com");
             mail.To.Add(email);
-            mail.Subject = "Security Code";
-            mail.Body = "Please insert the next code to the application: \n" + code;
+            mail.Subject = "CAPCKET - Security Code";
+            mail.Body = "Please use the following code in the CAPCKET application in order to complete the signing up process:\n" + code;
 
             SmtpServer.UseDefaultCredentials = false;
             SmtpServer.Port = 587;
