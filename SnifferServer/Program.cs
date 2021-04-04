@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SnifferServer
 {
@@ -12,6 +8,9 @@ namespace SnifferServer
         const int portNo = 500;
         private const string ipAddress = "127.0.0.1";
 
+        /// <summary>
+        /// The main entry point for the application.
+        /// </summary>
         static void Main(string[] args)
         {
             System.Net.IPAddress localAdd = System.Net.IPAddress.Parse(ipAddress);

@@ -1,12 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SnifferServer
 {
+    /// <summary>
+    /// class that handles the connection with the SQL Database
+    /// </summary>
     class SqlServer
     {
         private string connectionString = @"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=C:\Users\תמר\source\repos\SnifferServer\SnifferServer\Database1.mdf;Integrated Security=True"; // represents the location of the database
@@ -53,7 +52,6 @@ namespace SnifferServer
             }
         }
 
-
         /// <summary>
         /// gets a name and a password and returns true if these details exist in the database, else returns false
         /// </summary>
@@ -66,7 +64,6 @@ namespace SnifferServer
 
             cmd.CommandText = "select count(*) from Users where Username = '" + username + "' AND Password = '" + password + "' AND EmailConfirmed = '1'";
             int count = Convert.ToInt32(cmd.ExecuteScalar());
-
 
             if (count > 0)
             {

@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Security.Cryptography;
-using System.Text;
 using System.Windows.Forms;
 
 namespace SnifferServer
 {
+    /// <summary>
+    /// class that is responsible for RSA cryptogtaphy
+    /// </summary>
     class RsaCrypto
     {
         private RSACryptoServiceProvider ServerPrivateKey; //server's private key

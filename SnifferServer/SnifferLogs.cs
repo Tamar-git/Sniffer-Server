@@ -1,17 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
-using PacketDotNet;
-using SharpPcap;
-using SharpPcap.LibPcap;
-using SharpPcap.WinPcap;
 using System.IO;
 
 namespace SnifferServer
 {
+    /// <summary>
+    /// class that handles  the logs  and the connection with the client during the sniffer stage
+    /// </summary>
     class SnifferLogs
     {
         // information about the client

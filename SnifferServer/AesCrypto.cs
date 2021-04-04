@@ -1,21 +1,21 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SnifferServer
 {
+    /// <summary>
+    /// class that is responsible for AES cryptogtaphy
+    /// </summary>
     class AesCrypto
     {
-        Aes aes;
+        private Aes aes; // Represents the abstract base class
 
         /// <summary>
         /// constructor that creates an Aes object with a key
         /// </summary>
         /// <param name="key">AES key from the client</param>
+        /// <param name="iv">AES iv from the client</param>
         public AesCrypto(byte[] key, byte[] iv)
         {
             aes = Aes.Create();
@@ -40,10 +40,13 @@ namespace SnifferServer
         {
             return aes.IV;
         }
+
         /// <summary>
-        ///  encryptes plain text using AES protocol
+        /// encryptes plain text using AES protocol
         /// </summary>
         /// <param name="plainText">original text string</param>
+        /// <param name="Key">AES key</param>
+        /// <param name="IV">AES iv</param>
         /// <returns>encrypted bytes</returns>
         public byte[] EncryptStringToBytes(string plainText, byte[] Key, byte[] IV)
         {
@@ -89,6 +92,8 @@ namespace SnifferServer
         /// Decryptes encrypted bytes using AES protocol
         /// </summary>
         /// <param name="cipherText">encrypted bytes</param>
+        /// <param name="Key">AES key</param>
+        /// <param name="IV">AES iv</param>
         /// <returns>decrypted string</returns>
         public string DecryptStringFromBytes(byte[] cipherText, byte[] Key, byte[] IV)
         {

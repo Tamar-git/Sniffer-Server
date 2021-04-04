@@ -68,7 +68,6 @@
   <ItemGroup>
     <Compile Include="AesCrypto.cs" />
     <Compile Include="ClientRequestHandler.cs" />
-    <Compile Include="Communication.cs" />
     <Compile Include="SnifferLogs.cs" />
     <Compile Include="RsaCrypto.cs" />
     <Compile Include="Program.cs" />

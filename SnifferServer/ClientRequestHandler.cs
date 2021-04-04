@@ -1,20 +1,13 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data.SqlClient;
-using System.Diagnostics;
-using System.Linq;
 using System.Net.Mail;
 using System.Net.Sockets;
-using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Forms;
 
 namespace SnifferServer
 {
+    /// <summary>
+    /// class that handles the connection with the client during the login stage
+    /// </summary>
     class ClientRequestHandler
     {
         // SQL Server
