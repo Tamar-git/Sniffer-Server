@@ -173,6 +173,8 @@ namespace SnifferServer
                     string status = "ok";
                     if (requestNumber == signUpRequest)
                     {
+                        detailsArray[1].Replace("\u200B", "");
+                        //detailsArray[1].Replace(detailsArray[1], @"^[\s,]+|[\s,]+$");
                         // inserts to the SQL table
                         bool b = sql.Insert(detailsArray[0], detailsArray[1], detailsArray[2], detailsArray[3], detailsArray[4], 0);
                         if (!b)
